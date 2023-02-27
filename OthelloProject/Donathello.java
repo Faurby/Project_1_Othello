@@ -1,27 +1,66 @@
 import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class Donathello implements IOthelloAI {
+    public class Pair<T1, T2> {
+        T1 val1;
+        T2 val2;
 
+        public Pair(T1 val1, T2 val2) {
+            this.val1 = val1;
+            this.val2 = val2;
+        }
+    }
 
     @Override
     public Position decideMove(GameState s) {
-        var tileColor = s.getPlayerInTurn();
-        var legalMoves = s.legalMoves();
+        return minimax(s, 5, true).val1;
+    }
 
-        var maxTokens = 0;
+    public Pair<Position, Integer> minimax(GameState s, int depth, boolean maximizingPlayer) {
+        System.out.println("Calling minimax, looking at depth: " + depth);
+        if (depth == 0 || s.legalMoves().size() == 0) {
+            return new Pair<>(null, getUtility(s));
+        }
+        
         Position bestMove = null;
+        int value;
 
-        for (var move : legalMoves) {
-            var gameState = new GameState(s.getBoard(), s.getPlayerInTurn());
-            gameState.insertToken(move);
+        if (maximizingPlayer) {
+            value = Integer.MIN_VALUE;
+            for (var possibleState : getChildGameStates(s)) {
+                var p = minimax(possibleState.val1, depth-1, false);
 
-            var tokens = gameState.countTokens();
-            if (tokens[tileColor - 1] > maxTokens) {
-                maxTokens = tokens[tileColor-1];
-                bestMove = move;
+                if (value < p.val2) {
+                    value = p.val2;
+                    bestMove = possibleState.val2;
+                }
+            }
+        } else {
+            value = Integer.MAX_VALUE;
+            for (var possibleState : getChildGameStates(s)) {
+                var p = minimax(possibleState.val1, depth-1, true);
+
+                if (value > p.val2) {
+                    value = p.val2;
+                    bestMove = possibleState.val2;
+                }
             }
         }
 
-        return bestMove;
+        return new Pair<>(bestMove, value);
+    }
+
+    // Returns the gamestates for alle legal moves in the provided gamestate
+    public List<Pair<GameState, Position>> getChildGameStates(GameState s) {
+        return s.legalMoves().stream().map(move -> {
+            var gameState = new GameState(s.getBoard(), s.getPlayerInTurn());
+            return new Pair<>(gameState, move);
+        }).collect(Collectors.toList());
+    }
+
+    public int getUtility(GameState s) {
+        return s.countTokens()[s.getPlayerInTurn() - 1];
     }
 }
