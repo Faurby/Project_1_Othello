@@ -6,7 +6,8 @@
 java Othello.java 'human' DumAI 8
 ```
 
-### Master Plan
+## Status
 
-- Recursively call minimax on all possible legal moves.
-- Only evaluates on max number of tokens you can get.
+At the moment when playing against DumAI, which selects random moves:
+
+- 6/6
