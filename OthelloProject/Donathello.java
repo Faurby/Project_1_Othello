@@ -13,7 +13,16 @@ public class Donathello implements IOthelloAI {
         }
     }
 
+    private static double heuristicWeight = 0.5;
+
+    private double positionHExtreme;
+
     private double[][] weightedBoard;
+
+    private int boardSize;
+
+    private int boardLength;
+
 
     /**
      * Implements the decideMove function from the IOthelloAI.
@@ -24,7 +33,9 @@ public class Donathello implements IOthelloAI {
     @Override
     public Position decideMove(GameState s) {
         if (weightedBoard == null) {
-            weightedBoard = buildWeightedGameBoard(s.getBoard().length);
+            boardLength = s.getBoard().length;
+            boardSize = boardLength * boardLength;
+            weightedBoard = buildWeightedGameBoard(boardLength);
         }
 
         var p = minimax(s, 4, true, Integer.MIN_VALUE, Integer.MAX_VALUE);
@@ -47,7 +58,7 @@ public class Donathello implements IOthelloAI {
      * @return Pair of position (best move) and utility (as a double)
      */
     public Pair<Position, Double> minimax(GameState s, int depth, boolean maximizingPlayer, double alpha, double beta) {
-        if (depth == 0 || s.legalMoves().size() == 0) {
+        if (depth == 0 || s.legalMoves().size() == 0) { 
             return new Pair<>(new Position(-1, -1), getUtility(s));
         }
 
@@ -119,7 +130,7 @@ public class Donathello implements IOthelloAI {
     public double[] countWeightedTokens(GameState s) {
         double tokens1 = 0;
         double tokens2 = 0;
-        int size = s.getBoard().length;
+        int size = boardLength;
         int[][] board = s.getBoard();
         for (int i = 0; i < size; i++) {
             for (int j = 0; j < size; j++) {
@@ -142,7 +153,7 @@ public class Donathello implements IOthelloAI {
      */
     public double[][] buildWeightedGameBoard(int size) {
         double[][] weightedBoard = new double[size][size];
-
+        positionHExtreme = 0; 
         for (int i = 0; i < size; i++) {
             for (int j = 0; j < size; j++) {
                 // Corners
@@ -151,7 +162,7 @@ public class Donathello implements IOthelloAI {
                 // x 0 0
                 if ((i == 0 || i == size - 1) && (j == 0 || j == size - 1)) {
                     weightedBoard[i][j] = 1;
-
+                    positionHExtreme += 1;
                     // Adjacent to corners (on edges).
                     // 0
                     // x 0
@@ -159,14 +170,14 @@ public class Donathello implements IOthelloAI {
                 } else if (((i == 1 || i == size - 2) && (j == 0 || j == size - 1))
                         || ((i == 0 || i == size - 1) && (j == 1 || j == size - 2))) {
                     weightedBoard[i][j] = -0.5;
-
+                    positionHExtreme -= 0.5;
                     // Diagonally adjacent to corners.
                     // 0
                     // 0 x
                     // 0 0 0
                 } else if ((i == 1 || i == size - 2) && (j == 1 || j == size - 2)) {
                     weightedBoard[i][j] = -1;
-
+                    positionHExtreme -= 1;
                     // Edges except special cases above.
                     // x
                     // x
@@ -175,6 +186,7 @@ public class Donathello implements IOthelloAI {
                 } else if (((j == 0 || j == size - 1) && (i > 2 && i < size - 3) || i == 0 || i == size - 1)
                         && (j > 2 && j < size - 3)) {
                     weightedBoard[i][j] = 0.8;
+                    positionHExtreme += 0.8;
 
                     // Edges between diagonally adjacent corners
                     // 0 x
@@ -184,7 +196,7 @@ public class Donathello implements IOthelloAI {
                 } else if (((j == 1 || j == size - 2) && (i > 1 && i < size - 3) || i == 1 || i == size - 2)
                         && (j > 1 && j < size - 3)) {
                     weightedBoard[i][j] = -0.5;
-
+                    positionHExtreme -= 0.5;
                     // Middle of board
                     // 0 0 x x
                     // 0 0 x x
@@ -192,6 +204,7 @@ public class Donathello implements IOthelloAI {
                     // 0 0 0 0
                 } else {
                     weightedBoard[i][j] = 0.3;
+                    positionHExtreme += 0.3;
                 }
             }
         }
@@ -199,27 +212,54 @@ public class Donathello implements IOthelloAI {
         return weightedBoard;
     }
 
-    private static double heuristicWeight = 0.5;
 
     public double getWeightedTile(int col, int row) {
         return weightedBoard[col][row];
     }
 
-    /**
-     * Calculate occupation numbers.
-     * 
-     * @param s GameState
-     * @return returns occupied percentage, black occupation percentage, white
-     *         occupation percentage, black tiles and white tiles.
+    /*
+     * Heuristic determining how beneficial it is to have many tiles, depending on how many tiles have been placed.
+     * The idea is that at the beginning of the game, it is better to have less tiles, in order to give the opponent less angles of attack.
+     * Towards the end of the game, it is increasingly important to own many tiles in order to win the game. 
+     * 32/32 is evaluated to 0, as it is a tie
      */
-    public double[] getOccupiedPercentage(GameState s) {
+    public double hungryH(GameState s){
         var tiles = s.countTokens();
-        var black = tiles[0];
-        var white = tiles[1];
-        var occupied = white + black;
-        var total = Math.pow(s.getBoard().length, 2);
+        int ownTiles;
+        int oppTiles;
+        if (s.getPlayerInTurn() == 1) {
+            ownTiles = tiles[0];
+            oppTiles = tiles[1];
+        } else {
+            ownTiles = tiles[1];
+            oppTiles = tiles[0];
+        }
 
-        return new double[] {occupied / total, black / occupied, white / occupied, black, white};
+        double occupation = (ownTiles + oppTiles) / boardSize;
+        // progressionFactor grows from -1 to 1, from the beginning to the end of the game
+        double progressionFactor = 2*occupation-1;
+        double ownOccupation = ownTiles/boardSize;
+
+        return progressionFactor * ownOccupation - 0.5;
+    }
+
+    /*
+     * Calculate position heuristic based on tile weights, as assigned in buildWeightedGameBoard
+     * 
+     */
+    public double positionH(GameState s) {
+        double[] weightedTiles = countWeightedTokens(s);
+        double ownWeight;
+        double oppWeight;
+        if (s.getPlayerInTurn() == 1) {
+            ownWeight = weightedTiles[0];
+            oppWeight = weightedTiles[1];
+        } else {
+            ownWeight = weightedTiles[1];
+            oppWeight = weightedTiles[0];
+        }
+
+        return (ownWeight-oppWeight)/positionHExtreme;
     }
 
     /**
@@ -232,13 +272,7 @@ public class Donathello implements IOthelloAI {
      * @return returns the heuristic value of this GameState.
      */
     public double heuristic(GameState s) {
-        var occupation = getOccupiedPercentage(s);
-        var occupationHeuristic = -Math.abs(occupation[0] - occupation[s.getPlayerInTurn()]);
-        // --- Does not work properly ----
-        // var positionHeuristic = countWeightedTokens(s)[s.getPlayerInTurn()-1] /
-        // (occupation[s.getPlayerInTurn()+2]);
-        var positionHeuristic = countWeightedTokens(s)[s.getPlayerInTurn() - 1];
-        return heuristicWeight * positionHeuristic + (1.0 - heuristicWeight) * occupationHeuristic;
+        return heuristicWeight * positionH(s) + (1.0 - heuristicWeight) * hungryH(s);
     }
 
 }
