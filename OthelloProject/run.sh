@@ -1,3 +1,8 @@
-#!bin/bash
-javac Donathello.java
-java Othello.java DumAI Donathello 8
+#!/usr/bin/env bash
+
+HERE=$(dirname $(realpath $0))
+
+cd $HERE
+
+javac *.java
+java Othello DumAI Donathello 8
