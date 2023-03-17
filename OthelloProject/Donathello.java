@@ -67,7 +67,7 @@ public class Donathello implements IOthelloAI {
 
         for (var possibleState : getChildGameStates(s)) {
             if (maximizingPlayer) {
-                value = Double.MIN_VALUE;
+                value = -Double.MAX_VALUE;
                 var p = minimax(possibleState.val1, depth - 1, false, alpha, beta);
 
                 if (value < p.val2) {
