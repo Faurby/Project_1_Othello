@@ -15,9 +15,10 @@ public class Donathello implements IOthelloAI {
 
     private double positionHExtreme;
 
-    private double[][] weightedBoard;
+    private double[][] weightedBoard = null;
 
     private int boardSize;
+    private double boardSizeD;
 
     private int boardLength;
 
@@ -35,6 +36,7 @@ public class Donathello implements IOthelloAI {
         if (weightedBoard == null) {
             boardLength = s.getBoard().length;
             boardSize = boardLength * boardLength;
+            boardSizeD = boardSize;
             weightedBoard = buildWeightedGameBoard(boardLength);
         }
 
@@ -43,7 +45,7 @@ public class Donathello implements IOthelloAI {
             return legalMoves.get(0);
         }
 
-        var p = minimax(s, 8, true, Integer.MIN_VALUE, Integer.MAX_VALUE);
+        var p = minimax(s, 8, true, -Double.MAX_VALUE, Double.MAX_VALUE);
         var duration = System.currentTimeMillis() - start;
         System.out.println("Utility for best move is " + p.val2);
         System.out.println("Decision took " + duration + "ms");
@@ -71,34 +73,31 @@ public class Donathello implements IOthelloAI {
         }
 
         Position bestMove = null;
-        double value = 0.0;
+        double value = maximizingPlayer ? -Double.MAX_VALUE : Double.MAX_VALUE;
 
         for (var possibleState : getChildGameStates(s)) {
+            var moveTaken = possibleState.val2;
+            var p = minimax(possibleState.val1, depth - 1, !maximizingPlayer, alpha, beta);
+            var bestValueFound = p.val2;
             if (maximizingPlayer) {
-                value = -Double.MAX_VALUE;
-                var p = minimax(possibleState.val1, depth - 1, false, alpha, beta);
-
-                if (value < p.val2) {
-                    value = p.val2;
-                    bestMove = possibleState.val2;
+                if (bestValueFound > value) {
+                    value = bestValueFound;
+                    bestMove = moveTaken;
                 }
 
-                if (value > beta) {
+                if (value >= beta) {
                     break;
                 }
 
                 alpha = Math.max(alpha, value);
 
             } else {
-                value = Double.MAX_VALUE;
-                var p = minimax(possibleState.val1, depth - 1, true, alpha, beta);
-
-                if (value > p.val2) {
-                    value = p.val2;
-                    bestMove = possibleState.val2;
+                if (bestValueFound < value) {
+                    value = bestValueFound;
+                    bestMove = moveTaken;
                 }
 
-                if (value < alpha) {
+                if (value <= alpha) {
                     break;
                 }
 
@@ -205,7 +204,7 @@ public class Donathello implements IOthelloAI {
                     // 0 0 0 0
                     // 0 0 0 0
                 } else {
-                    weightedBoard[i][j] = 2;
+                    weightedBoard[i][j] = 0.3;
                 }
             }
         }
@@ -238,7 +237,7 @@ public class Donathello implements IOthelloAI {
     }
 
     /**
-     * Calculate heuristic for GameState. The thought is to use the heatmap
+     * Calculate heuristic for GameState. The idea is to use the heatmap
      * (position heuristic) for the player. The idea is that edges and corners are
      * good positions, while the squares next to them are bad because we then allow
      * the opponent to place tiles on the good tiles.
