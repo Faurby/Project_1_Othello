@@ -203,8 +203,7 @@ public class Donathello implements IOthelloAI {
                     // 0 0 0 0
                     // 0 0 0 0
                 } else {
-                    weightedBoard[i][j] = 0.3;
-                    positionHExtreme += 0.3;
+                    weightedBoard[i][j] = 0;
                 }
             }
         }
