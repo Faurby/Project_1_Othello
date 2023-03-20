@@ -21,6 +21,7 @@ public class Donathello implements IOthelloAI {
     private double boardSizeD;
 
     private int boardLength;
+    private boolean initial;
 
 
     /**
@@ -31,6 +32,11 @@ public class Donathello implements IOthelloAI {
      */
     @Override
     public Position decideMove(GameState s) {
+        if (!initial) {
+            String player = s.getPlayerInTurn() == 1 ? "black" : "white";
+            System.out.println("==== Game start ====\nWe are player " + s.getPlayerInTurn() + " which is " + player);
+            initial = true;
+        }
         var start = System.currentTimeMillis();
 
         if (weightedBoard == null) {
@@ -45,7 +51,7 @@ public class Donathello implements IOthelloAI {
             return legalMoves.get(0);
         }
 
-        var p = minimax(s, 8, true, -Double.MAX_VALUE, Double.MAX_VALUE);
+        var p = minimax(s, 6, true, -Double.MAX_VALUE, Double.MAX_VALUE);
         var duration = System.currentTimeMillis() - start;
         System.out.println("Utility for best move is " + p.val2);
         System.out.println("Decision took " + duration + "ms");
@@ -223,17 +229,7 @@ public class Donathello implements IOthelloAI {
      */
     public double positionH(GameState s) {
         double[] weightedTiles = countWeightedTokens(s);
-        double ownWeight;
-        double oppWeight;
-        if (s.getPlayerInTurn() == 1) {
-            ownWeight = weightedTiles[0];
-            oppWeight = weightedTiles[1];
-        } else {
-            ownWeight = weightedTiles[1];
-            oppWeight = weightedTiles[0];
-        }
-
-        return ownWeight-oppWeight;
+        return weightedTiles[s.getPlayerInTurn()-1];
     }
 
     /**
