@@ -5,4 +5,4 @@ HERE=$(dirname $(realpath $0))
 cd $HERE
 
 javac *.java
-java Othello DumAI Donathello 8
+java Othello RandomAI OthelloAIDonathello

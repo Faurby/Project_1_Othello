@@ -1,7 +1,7 @@
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class Donathello implements IOthelloAI {
+public class OthelloAIDonathello implements IOthelloAI {
 
     public class Pair<T1, T2> {
         T1 val1;
