@@ -1,10 +1,8 @@
 # Project_1_Othello
 
-## How to run this bad boi
+## How to run:
 
-```bash
-java Othello.java 'human' DumAI 8
-```
+Run run.sh from the project folder (OthelloProject)
 
 ## Status
 
